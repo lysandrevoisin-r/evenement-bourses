@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BAR BOURSE — Le Mans</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Bebas+Neue&family=DM+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #00ff88;
+    --red: #ff3355;
+    --gold: #f5c842;
+    --bg: #020508;
+    --surface: #070d12;
+    --border: #0f1e28;
+    --text: #c8d8e0;
+    --dim: #2a3a44;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; overflow-x: hidden; }
+  body::before { content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none; background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px); }
+
+  /* ── TICKER ── */
+  .ticker-wrap { background: var(--green); overflow: hidden; height: 28px; display: flex; align-items: center; position: relative; z-index: 10; }
+  .ticker { display: flex; gap: 60px; animation: ticker 25s linear infinite; white-space: nowrap; }
+  .ticker span { font-family: 'Share Tech Mono', monospace; font-size: 11px; color: #000; letter-spacing: 2px; }
+  @keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+  /* ── HEADER ── */
+  header { padding: 16px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: var(--surface); position: relative; z-index: 10; }
+  .logo { font-family: 'Bebas Neue', sans-serif; font-size: 30px; color: #fff; letter-spacing: 4px; }
+  .logo span { color: var(--green); }
+  .logo-sub { font-size: 9px; color: var(--dim); letter-spacing: 2px; font-family: 'Share Tech Mono', monospace; margin-top: 2px; }
+  .live-badge { display: inline-flex; align-items: center; gap: 6px; font-family: 'Share Tech Mono', monospace; font-size: 10px; color: var(--red); letter-spacing: 2px; }
+  .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--red); animation: blink 1s ease-in-out infinite; }
+  @keyframes blink { 0%,100%{opacity:1}50%{opacity:.2} }
+  .clock { font-family: 'Share Tech Mono', monospace; font-size: 22px; color: #fff; margin-top: 4px; letter-spacing: 3px; }
+
+  /* ── CRASH ALERT ── */
+  .crash-alert { display: none; background: var(--red); color: #fff; text-align: center; padding: 12px; font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 6px; animation: flash .4s ease-in-out infinite alternate; position: relative; z-index: 10; }
+  @keyframes flash { from{opacity:1}to{opacity:.5} }
+
+  /* ── MAIN ── */
+  .main { padding: 16px; display: flex; flex-direction: column; gap: 14px; position: relative; z-index: 1; }
+
+  .stats-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); padding: 12px 16px; }
+  .stat-card .slabel { font-size: 9px; color: var(--dim); letter-spacing: 2px; font-family: 'Share Tech Mono', monospace; }
+  .stat-card .sval { font-family: 'Bebas Neue', sans-serif; font-size: 24px; color: #fff; margin-top: 2px; }
+  .sval.green{color:var(--green)} .sval.red{color:var(--red)} .sval.gold{color:var(--gold)}
+
+  .drinks-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(195px,1fr)); gap: 10px; }
+
+  .drink-card { background: var(--surface); border: 1px solid var(--border); padding: 16px; transition: border-color .3s; }
+  .drink-card.up { border-color: rgba(255,51,85,.35); }
+  .drink-card.down { border-color: rgba(0,255,136,.35); }
+  .drink-card.crash { animation: cardflash .3s ease 3; }
+  @keyframes cardflash { 0%,100%{background:var(--surface)}50%{background:rgba(255,51,85,.15)} }
+  .drink-name { font-family: 'Bebas Neue', sans-serif; font-size: 17px; color: #fff; letter-spacing: 2px; margin-bottom: 2px; }
+  .drink-category { font-size: 9px; color: var(--dim); letter-spacing: 2px; font-family: 'Share Tech Mono', monospace; margin-bottom: 12px; }
+  .price-row { display: flex; align-items: flex-end; justify-content: space-between; }
+  .current-price { font-family: 'Bebas Neue', sans-serif; font-size: 34px; color: #fff; line-height: 1; }
+  .price-unit { font-size: 13px; color: var(--dim); }
+  .change-badge { font-family: 'Share Tech Mono', monospace; font-size: 10px; padding: 3px 7px; border-radius: 2px; }
+  .change-badge.pos{background:rgba(0,255,136,.12);color:var(--green)}
+  .change-badge.neg{background:rgba(255,51,85,.12);color:var(--red)}
+  .change-badge.neu{background:rgba(200,216,224,.06);color:var(--dim)}
+  .mini-chart { margin-top: 10px; height: 28px; }
+  .mini-chart svg { width:100%; height:100%; }
+  .volume-wrap { margin-top: 7px; }
+  .volume-label { font-size: 8px; color: var(--dim); font-family: 'Share Tech Mono', monospace; display: flex; justify-content: space-between; margin-bottom: 3px; }
+  .volume-bar { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .volume-fill { height: 100%; border-radius: 2px; transition: width 1s ease; }
+
+  .bottom-bar { background: var(--surface); border: 1px solid var(--border); padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+  .bottom-bar .info { font-size: 10px; color: var(--dim); font-family: 'Share Tech Mono', monospace; }
+  .bottom-bar .info span { color: var(--gold); }
+
+  /* ── ADMIN STRIP ── */
+  .admin-strip { background: #040a0e; border-top: 1px solid var(--border); padding: 10px 16px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; position: relative; z-index: 10; }
+  .alabel { font-size: 9px; color: #333; font-family: 'Share Tech Mono', monospace; letter-spacing: 2px; }
+  .btn { font-family: 'Share Tech Mono', monospace; font-size: 10px; letter-spacing: 2px; padding: 7px 14px; border: 1px solid; background: transparent; cursor: pointer; transition: all .2s; text-transform: uppercase; }
+  .btn-green{color:var(--green);border-color:rgba(0,255,136,.3)} .btn-green:hover{background:rgba(0,255,136,.1)}
+  .btn-red{color:var(--red);border-color:rgba(255,51,85,.3)} .btn-red:hover{background:rgba(255,51,85,.1)}
+  .btn-gold{color:var(--gold);border-color:rgba(245,200,66,.3)} .btn-gold:hover{background:rgba(245,200,66,.1)}
+  .btn-blue{color:#4af;border-color:rgba(64,170,255,.3)} .btn-blue:hover{background:rgba(64,170,255,.1)}
+
+  /* ── MODAL ADMIN ── */
+  .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.85); z-index:1000; align-items:center; justify-content:center; }
+  .modal-overlay.open { display:flex; }
+  .modal { background:#070d12; border:1px solid #0f1e28; width:min(96vw,720px); max-height:90vh; overflow-y:auto; }
+  .modal-header { background:#040a0e; padding:18px 24px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border); position:sticky; top:0; z-index:2; }
+  .modal-header h2 { font-family:'Bebas Neue',sans-serif; font-size:22px; color:#fff; letter-spacing:3px; }
+  .modal-close { background:none; border:none; color:var(--dim); font-size:22px; cursor:pointer; line-height:1; }
+  .modal-close:hover { color:#fff; }
+  .modal-body { padding:20px 24px; display:flex; flex-direction:column; gap:16px; }
+
+  /* SETTINGS */
+  .settings-block { background:#040a0e; border:1px solid var(--border); padding:16px; }
+  .settings-block h3 { font-family:'Share Tech Mono',monospace; font-size:10px; color:var(--green); letter-spacing:3px; margin-bottom:14px; text-transform:uppercase; }
+  .form-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:8px; }
+  .form-row.three { grid-template-columns:2fr 1fr 1fr 1fr; }
+  .form-group { display:flex; flex-direction:column; gap:4px; }
+  .form-group label { font-size:9px; color:var(--dim); font-family:'Share Tech Mono',monospace; letter-spacing:1px; text-transform:uppercase; }
+  .form-group input { background:#0a1520; border:1px solid var(--border); color:#fff; padding:8px 10px; font-family:'Share Tech Mono',monospace; font-size:12px; outline:none; width:100%; }
+  .form-group input:focus { border-color:var(--green); }
+
+  .drink-admin-row { background:#040a0e; border:1px solid var(--border); padding:14px; margin-bottom:8px; }
+  .drink-admin-row .row-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .drink-admin-row .row-header span { font-family:'Bebas Neue',sans-serif; font-size:15px; color:#fff; letter-spacing:2px; }
+  .remove-btn { background:none; border:1px solid rgba(255,51,85,.3); color:var(--red); font-size:10px; padding:3px 8px; cursor:pointer; font-family:'Share Tech Mono',monospace; letter-spacing:1px; }
+  .remove-btn:hover { background:rgba(255,51,85,.1); }
+  .add-btn { background:none; border:1px solid rgba(0,255,136,.3); color:var(--green); font-size:10px; padding:8px 16px; cursor:pointer; font-family:'Share Tech Mono',monospace; letter-spacing:2px; width:100%; margin-top:4px; transition:all .2s; }
+  .add-btn:hover { background:rgba(0,255,136,.08); }
+  .save-btn { background:var(--green); color:#000; border:none; padding:12px 24px; font-family:'Bebas Neue',sans-serif; font-size:16px; letter-spacing:3px; cursor:pointer; width:100%; margin-top:8px; }
+  .save-btn:hover { opacity:.9; }
+
+  .section-divider { height:1px; background:var(--border); margin:4px 0; }
+
+  /* interval setting */
+  .interval-row { display:flex; align-items:center; gap:12px; }
+  .interval-row input { width:80px; }
+  .interval-row span { font-size:10px; color:var(--dim); font-family:'Share Tech Mono',monospace; }
+
+  @media(max-width:600px){
+    .stats-row{grid-template-columns:repeat(2,1fr)}
+    .drinks-grid{grid-template-columns:1fr 1fr}
+    .form-row.three{grid-template-columns:1fr 1fr}
+  }
+</style>
+</head>
+<body>
+
+<div class="ticker-wrap"><div class="ticker" id="ticker"></div></div>
+
+<header>
+  <div>
+    <div class="logo" id="headerTitle">BAR <span>BOURSE</span></div>
+    <div class="logo-sub" id="headerSub">LE MANS · SESSION EN COURS</div>
+  </div>
+  <div style="text-align:right">
+    <div class="live-badge"><div class="live-dot"></div> LIVE MARKET</div>
+    <div class="clock" id="clock">--:--:--</div>
+  </div>
+</header>
+
+<div class="crash-alert" id="crashAlert">⚠ CRASH DU MARCHÉ — TOUS LES VERRES À MOITIÉ PRIX ⚠</div>
+
+<div class="main">
+  <div class="stats-row">
+    <div class="stat-card"><div class="slabel">Indice du soir</div><div class="sval" id="index">—</div></div>
+    <div class="stat-card"><div class="slabel">Meilleure affaire</div><div class="sval gold" id="bestDeal">—</div></div>
+    <div class="stat-card"><div class="slabel">Plus demandé</div><div class="sval" id="mostWanted">—</div></div>
+    <div class="stat-card"><div class="slabel">Prochain crash</div><div class="sval red" id="crashTimer">--:--</div></div>
+  </div>
+  <div class="drinks-grid" id="drinksGrid"></div>
+  <div class="bottom-bar">
+    <div class="info">Prix mis à jour toutes les <span id="infoInterval">90</span> secondes</div>
+    <div class="info">Crash : <span>prix ÷ 2</span> pendant <span id="infoCrashDur">3</span> min</div>
+    <div class="info">Min <span>prix plancher</span> · Max <span>prix plafond</span></div>
+  </div>
+</div>
+
+<div class="admin-strip">
+  <span class="alabel">ADMIN :</span>
+  <button class="btn btn-red" onclick="triggerCrash()">🔴 Crash marché</button>
+  <button class="btn btn-green" onclick="triggerBull()">📈 Bull Run</button>
+  <button class="btn btn-gold" onclick="resetPrices()">↺ Reset prix</button>
+  <button class="btn btn-blue" onclick="openAdmin()">⚙ Paramètres</button>
+</div>
+
+<!-- ── MODAL ADMIN ── -->
+<div class="modal-overlay" id="adminModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>⚙ PANNEAU ADMIN</h2>
+      <button class="modal-close" onclick="closeAdmin()">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Infos soirée -->
+      <div class="settings-block">
+        <h3>🎉 Infos de la soirée</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nom de l'événement</label>
+            <input type="text" id="cfg_eventName" value="BAR BOURSE">
+          </div>
+          <div class="form-group">
+            <label>Lieu / Ville</label>
+            <input type="text" id="cfg_location" value="LE MANS · SESSION EN COURS">
+          </div>
+        </div>
+      </div>
+
+      <!-- Paramètres marché -->
+      <div class="settings-block">
+        <h3>📊 Paramètres du marché</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Intervalle mise à jour (secondes)</label>
+            <input type="number" id="cfg_interval" value="90" min="15" max="600">
+          </div>
+          <div class="form-group">
+            <label>Durée crash (minutes)</label>
+            <input type="number" id="cfg_crashDur" value="3" min="1" max="10">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Délai auto crash (minutes)</label>
+            <input type="number" id="cfg_crashDelay" value="18" min="5" max="60">
+          </div>
+          <div class="form-group">
+            <label>Variation max par cycle (€)</label>
+            <input type="number" id="cfg_maxDelta" value="0.8" min="0.1" max="3" step="0.1">
+          </div>
+        </div>
+      </div>
+
+      <!-- Boissons -->
+      <div class="settings-block">
+        <h3>🍺 Boissons</h3>
+        <div id="drinksAdmin"></div>
+        <button class="add-btn" onclick="addDrink()">+ Ajouter une boisson</button>
+      </div>
+
+      <button class="save-btn" onclick="saveAdmin()">✓ ENREGISTRER ET APPLIQUER</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── CONFIG ──
+let CFG = {
+  eventName: 'BAR BOURSE',
+  location: 'LE MANS · SESSION EN COURS',
+  interval: 90,
+  crashDur: 3,
+  crashDelay: 18,
+  maxDelta: 0.8,
+};
+
+let DRINKS = [
+  { id:'biere',    name:'Bière Pression', cat:'BIÈRE',    base:4.0,  min:2.5, max:7.0  },
+  { id:'mojito',   name:'Mojito',         cat:'COCKTAIL', base:7.0,  min:4.0, max:12.0 },
+  { id:'vodkared', name:'Vodka Redbull',  cat:'COCKTAIL', base:8.0,  min:5.0, max:14.0 },
+  { id:'shot',     name:'Shot Tequila',   cat:'SHOT',     base:3.0,  min:1.5, max:5.0  },
+  { id:'vin',      name:'Verre de Vin',   cat:'VIN',      base:4.5,  min:3.0, max:7.0  },
+  { id:'ricard',   name:'Ricard',         cat:'ANISÉ',    base:3.5,  min:2.0, max:6.0  },
+  { id:'whisky',   name:'Whisky Cola',    cat:'SPIRIT',   base:7.0,  min:4.0, max:11.0 },
+  { id:'softs',    name:'Softs',          cat:'SANS ALC', base:2.5,  min:2.0, max:4.0  },
+];
+
+let state = {};
+let history = {};
+let crashActive = false;
+let crashCountdown = CFG.crashDelay * 60;
+let priceTimer = null;
+
+function initState() {
+  DRINKS.forEach(d => {
+    if (state[d.id] === undefined) state[d.id] = d.base;
+    if (!history[d.id]) history[d.id] = [d.base];
+  });
+}
+
+function rand(min, max) { return Math.random() * (max - min) + min; }
+
+function updatePrices(forceCrash=false, forceBull=false) {
+  DRINKS.forEach(d => {
+    let prev = state[d.id] ?? d.base;
+    let np;
+    if (forceCrash)     np = Math.max(d.min, prev * rand(0.4, 0.6));
+    else if (forceBull) np = Math.min(d.max, prev * rand(1.1, 1.3));
+    else {
+      let delta = rand(-CFG.maxDelta, CFG.maxDelta);
+      np = Math.max(d.min, Math.min(d.max, prev + delta));
+    }
+    np = Math.round(np * 2) / 2;
+    state[d.id] = np;
+    history[d.id] = history[d.id] || [];
+    history[d.id].push(np);
+    if (history[d.id].length > 14) history[d.id].shift();
+  });
+}
+
+function buildChart(id, color) {
+  const h = history[id] || [];
+  if (h.length < 2) return '';
+  const W=160, H=26, mn=Math.min(...h), mx=Math.max(...h), range=mx-mn||1;
+  const pts = h.map((v,i) => `${(i/(h.length-1))*W},${H-((v-mn)/range)*H}`).join(' ');
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.5" opacity=".8"/></svg>`;
+}
+
+function renderDrinks() {
+  const grid = document.getElementById('drinksGrid');
+  let best=null, bestDiff=Infinity, hottest=null, hotVol=-1;
+  const totalChg = DRINKS.reduce((acc,d) => acc + ((state[d.id]-d.base)/d.base), 0) / DRINKS.length * 100;
+
+  const cards = DRINKS.map(d => {
+    const cur = state[d.id] ?? d.base;
+    const hist = history[d.id] || [d.base];
+    const prev = hist.length > 1 ? hist[hist.length-2] : d.base;
+    const diff = cur - prev;
+    const pct = prev > 0 ? ((diff/prev)*100).toFixed(1) : '0.0';
+    const isUp = diff > 0.01, isDown = diff < -0.01;
+    const chartColor = isDown ? '#00ff88' : isUp ? '#ff3355' : '#2a3a44';
+    const badgeClass = isUp ? 'pos' : isDown ? 'neg' : 'neu';
+    const sign = isUp ? '▲' : isDown ? '▼' : '—';
+    const vol = Math.floor(rand(15, 100));
+    if (vol > hotVol) { hotVol = vol; hottest = d.name.split(' ')[0]; }
+    const dfBase = cur - d.base;
+    if (dfBase < bestDiff) { bestDiff = dfBase; best = d.name.split(' ')[0]; }
+    return `<div class="drink-card ${isUp?'up':isDown?'down':''}">
+      <div class="drink-name">${d.name}</div>
+      <div class="drink-category">${d.cat}</div>
+      <div class="price-row">
+        <div class="current-price">${cur.toFixed(1)}<span class="price-unit">€</span></div>
+        <div class="change-badge ${badgeClass}">${sign} ${Math.abs(parseFloat(pct))}%</div>
+      </div>
+      <div class="mini-chart">${buildChart(d.id, chartColor)}</div>
+      <div class="volume-wrap">
+        <div class="volume-label"><span>VOL</span><span>${vol}%</span></div>
+        <div class="volume-bar"><div class="volume-fill" style="width:${vol}%;background:${chartColor}"></div></div>
+      </div>
+    </div>`;
+  });
+
+  grid.innerHTML = cards.join('');
+  document.getElementById('bestDeal').textContent = best || '—';
+  document.getElementById('mostWanted').textContent = hottest || '—';
+  const idxEl = document.getElementById('index');
+  idxEl.textContent = (totalChg>=0?'+':'')+totalChg.toFixed(1)+'%';
+  idxEl.className = 'sval '+(totalChg>=0?'red':'green');
+
+  // ticker
+  const t = document.getElementById('ticker');
+  const content = DRINKS.map(d => {
+    const cur = state[d.id] ?? d.base;
+    const hist = history[d.id] || [d.base];
+    const prev = hist.length > 1 ? hist[hist.length-2] : d.base;
+    const diff = (cur-prev).toFixed(1);
+    const arr = diff>0?'▲':diff<0?'▼':'—';
+    return `<span>${d.name.toUpperCase()} ${arr} ${diff>0?'+':''}${diff}€</span>`;
+  }).join('');
+  t.innerHTML = content + content;
+}
+
+function triggerCrash() {
+  crashActive = true;
+  updatePrices(true);
+  renderDrinks();
+  document.getElementById('crashAlert').style.display = 'block';
+  setTimeout(() => {
+    document.getElementById('crashAlert').style.display = 'none';
+    crashActive = false;
+    crashCountdown = CFG.crashDelay * 60;
+  }, CFG.crashDur * 60 * 1000);
+}
+function triggerBull() { updatePrices(false,true); renderDrinks(); }
+function resetPrices() {
+  DRINKS.forEach(d => { state[d.id] = d.base; history[d.id] = [d.base]; });
+  renderDrinks();
+}
+
+function restartPriceTimer() {
+  if (priceTimer) clearInterval(priceTimer);
+  priceTimer = setInterval(() => { if(!crashActive){ updatePrices(); renderDrinks(); } }, CFG.interval * 1000);
+  document.getElementById('infoInterval').textContent = CFG.interval;
+  document.getElementById('infoCrashDur').textContent = CFG.crashDur;
+}
+
+// ── CLOCK & CRASH TIMER ──
+function updateClock() {
+  const n = new Date();
+  document.getElementById('clock').textContent =
+    String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0')+':'+String(n.getSeconds()).padStart(2,'0');
+}
+function updateCrashTimer() {
+  if (crashActive) { document.getElementById('crashTimer').textContent='ACTIF !'; return; }
+  crashCountdown--;
+  if (crashCountdown <= 0) { triggerCrash(); return; }
+  const m=Math.floor(crashCountdown/60), s=crashCountdown%60;
+  document.getElementById('crashTimer').textContent = String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+}
+
+// ── ADMIN PANEL ──
+function openAdmin() {
+  // fill fields
+  document.getElementById('cfg_eventName').value = CFG.eventName;
+  document.getElementById('cfg_location').value = CFG.location;
+  document.getElementById('cfg_interval').value = CFG.interval;
+  document.getElementById('cfg_crashDur').value = CFG.crashDur;
+  document.getElementById('cfg_crashDelay').value = CFG.crashDelay;
+  document.getElementById('cfg_maxDelta').value = CFG.maxDelta;
+  renderDrinksAdmin();
+  document.getElementById('adminModal').classList.add('open');
+}
+function closeAdmin() { document.getElementById('adminModal').classList.remove('open'); }
+
+function renderDrinksAdmin() {
+  const container = document.getElementById('drinksAdmin');
+  container.innerHTML = DRINKS.map((d,i) => `
+    <div class="drink-admin-row" id="adminRow_${i}">
+      <div class="row-header">
+        <span>${d.name}</span>
+        <button class="remove-btn" onclick="removeDrink(${i})">✕ Supprimer</button>
+      </div>
+      <div class="form-row three">
+        <div class="form-group">
+          <label>Nom</label>
+          <input type="text" id="d_name_${i}" value="${d.name}">
+        </div>
+        <div class="form-group">
+          <label>Catégorie</label>
+          <input type="text" id="d_cat_${i}" value="${d.cat}">
+        </div>
+        <div class="form-group">
+          <label>Prix de base (€)</label>
+          <input type="number" id="d_base_${i}" value="${d.base}" min="0.5" max="50" step="0.5">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Prix plancher min (€)</label>
+          <input type="number" id="d_min_${i}" value="${d.min}" min="0.5" max="50" step="0.5">
+        </div>
+        <div class="form-group">
+          <label>Prix plafond max (€)</label>
+          <input type="number" id="d_max_${i}" value="${d.max}" min="1" max="99" step="0.5">
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function removeDrink(i) {
+  DRINKS.splice(i, 1);
+  renderDrinksAdmin();
+}
+
+function addDrink() {
+  const newId = 'drink_' + Date.now();
+  DRINKS.push({ id: newId, name: 'Nouvelle Boisson', cat: 'AUTRE', base: 5.0, min: 3.0, max: 9.0 });
+  state[newId] = 5.0;
+  history[newId] = [5.0];
+  renderDrinksAdmin();
+}
+
+function saveAdmin() {
+  // save config
+  CFG.eventName = document.getElementById('cfg_eventName').value.trim() || 'BAR BOURSE';
+  CFG.location = document.getElementById('cfg_location').value.trim() || 'LE MANS';
+  CFG.interval = parseInt(document.getElementById('cfg_interval').value) || 90;
+  CFG.crashDur = parseInt(document.getElementById('cfg_crashDur').value) || 3;
+  CFG.crashDelay = parseInt(document.getElementById('cfg_crashDelay').value) || 18;
+  CFG.maxDelta = parseFloat(document.getElementById('cfg_maxDelta').value) || 0.8;
+
+  // save drinks
+  const newDrinks = [];
+  DRINKS.forEach((d, i) => {
+    const name = document.getElementById(`d_name_${i}`)?.value.trim();
+    if (!name) return;
+    const updated = {
+      id: d.id,
+      name,
+      cat: (document.getElementById(`d_cat_${i}`)?.value.trim() || d.cat).toUpperCase(),
+      base: parseFloat(document.getElementById(`d_base_${i}`)?.value) || d.base,
+      min: parseFloat(document.getElementById(`d_min_${i}`)?.value) || d.min,
+      max: parseFloat(document.getElementById(`d_max_${i}`)?.value) || d.max,
+    };
+    state[updated.id] = updated.base;
+    history[updated.id] = [updated.base];
+    newDrinks.push(updated);
+  });
+  DRINKS = newDrinks;
+
+  // apply UI
+  const parts = CFG.eventName.split(' ');
+  const first = parts[0], rest = parts.slice(1).join(' ');
+  document.getElementById('headerTitle').innerHTML = `${first} <span>${rest}</span>`;
+  document.getElementById('headerSub').textContent = CFG.location;
+  crashCountdown = CFG.crashDelay * 60;
+  restartPriceTimer();
+  renderDrinks();
+  closeAdmin();
+}
+
+// ── INIT ──
+initState();
+renderDrinks();
+restartPriceTimer();
+setInterval(updateClock, 1000);
+setInterval(updateCrashTimer, 1000);
+updateClock();
+</script>
+</body>
+</html>
