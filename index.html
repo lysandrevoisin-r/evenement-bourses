@@ -347,8 +347,46 @@ function renderDrinks() {
   t.innerHTML = content + content;
 }
 
+// ── SON CLOCHE WALL STREET (généré via Web Audio API) ──
+function playWallStreetBell() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function playBell(time, freq, duration, gain) {
+      const osc1 = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
+      const gainNode = ctx.createGain();
+
+      osc1.type = 'sine';
+      osc2.type = 'sine';
+      osc1.frequency.setValueAtTime(freq, time);
+      osc2.frequency.setValueAtTime(freq * 2.756, time); // harmonique cloche
+
+      gainNode.gain.setValueAtTime(gain, time);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, time + duration);
+
+      osc1.connect(gainNode);
+      osc2.connect(gainNode);
+      gainNode.connect(ctx.destination);
+
+      osc1.start(time); osc1.stop(time + duration);
+      osc2.start(time); osc2.stop(time + duration);
+    }
+
+    const now = ctx.currentTime;
+    // Séquence : DING DING DING — comme la cloche d'ouverture NYSE
+    playBell(now + 0.0,  880, 1.8, 0.6);
+    playBell(now + 0.5,  880, 1.8, 0.5);
+    playBell(now + 1.0,  880, 1.8, 0.5);
+    playBell(now + 1.5,  988, 2.0, 0.7); // note finale plus haute
+    playBell(now + 2.0,  880, 2.5, 0.9); // gros coup final
+
+  } catch(e) { console.log('Audio non supporté', e); }
+}
+
 function triggerCrash() {
   crashActive = true;
+  playWallStreetBell();
   updatePrices(true);
   renderDrinks();
   document.getElementById('crashAlert').style.display = 'block';
